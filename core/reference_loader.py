@@ -1,4 +1,5 @@
 import io
+import re
 from pathlib import Path
 
 import streamlit as st
@@ -88,11 +89,64 @@ def load_default_references() -> tuple[str, str]:
     return docx_text(instructions), docx_text(style)
 
 
+
+# Η εφαρμογή έχει κλειδώσει μόνιμα την "Απλή και πρακτική" παρουσίαση (βλ. app.py,
+# η "Αναλυτική" αφαιρέθηκε). Πριν, το load_orientation_command αγνοούσε το service
+# και επέστρεφε ΟΛΟΚΛΗΡΟ το ~7.000 λέξεων έγγραφο των κανόνων -- και τα δύο modes
+# (0Γ ενήλικα ΚΑΙ 0Δ παιδιού) μαζί, ΚΑΙ όλες τις ενότητες της "Αναλυτικής" έκδοσης
+# που δεν χρησιμοποιούνται ποτέ πια. Αυτό έθαβε το μοναδικό ουσιαστικό σήμα (ποιο
+# mode ισχύει) μέσα σε χιλιάδες λέξεις άσχετου/αντικρουόμενου κειμένου -- πιθανή
+# αιτία όταν μια παραγωγή αγνόησε την "Απλή" λειτουργία και έβγαλε πλήρη αναλυτική
+# έκδοση 7.000+ λέξεων.
+#
+# Ενότητες που αφορούν αποκλειστικά την "Αναλυτική" έκδοση (ή το άλλο mode) και
+# ρητά υπερισχύονται/παραλείπονται από τους Κανόνες 0Γ/0Δ -- ασφαλές να μην
+# σταλούν καθόλου, αφού δεν εφαρμόζονται ποτέ σε αυτή την εφαρμογή:
+_ANALYTICAL_ONLY_HEADINGS = (
+    "0Α.",   # πίνακες ταλέντων -- το 0Δ λέει ρητά "Μην χρησιμοποιήσεις πίνακες"
+    "10Α.",  # πλήρες Πλαίσιο Εκπαιδευτικού Συστήματος -- το 0Γ/0Δ ορίζουν τη δική τους, σύντομη εκδοχή
+    "11.",   # πλήρεις επαγγελματικές οικογένειες -- υπερισχύεται από το σύντομο σχήμα του 0Γ/0Δ
+    "12.",   # πλήρης ενσωμάτωση επαγγελμάτων -- ίδιος λόγος
+    "13.",   # περιβάλλον εργασίας -- ρητά παραλείπεται στη σύντομη έκδοση
+    "13Α.",  # δυνατά σημεία/εμπόδια -- ρητά παραλείπονται στη σύντομη έκδοση
+    "14.",   # σχέδιο διερεύνησης 8-12 εβδομάδων -- ρητά παραλείπεται
+    "15.",   # οδηγίες προς γονείς -- ρητά παραλείπεται
+    "16.",   # πλήρης υποχρεωτική δομή -- υπερισχύεται από τη δομή του 0Γ/0Δ
+    "18.",   # Συμβολική Κατεύθυνση Εξέλιξης -- ρητά παραλείπεται στη σύντομη έκδοση
+)
+
+
+def _filter_orientation_sections(text: str, service: str) -> str:
+    lines = text.split("\n")
+    heading_re = re.compile(r"^(0[Α-Ω]?\.|[0-9]{1,2}[Α-Ω]?\.)\s")
+
+    other_mode_heading = (
+        "0Γ." if service == "Παιδί/έφηβος" else "0Δ."
+    )
+    excluded_prefixes = _ANALYTICAL_ONLY_HEADINGS + (other_mode_heading,)
+
+    headings = [i for i, l in enumerate(lines) if heading_re.match(l)]
+    drop_ranges = []
+    for pos, idx in enumerate(headings):
+        heading_text = lines[idx]
+        if heading_text.startswith(excluded_prefixes):
+            end = headings[pos + 1] if pos + 1 < len(headings) else len(lines)
+            drop_ranges.append((idx, end))
+
+    keep = [True] * len(lines)
+    for start, end in drop_ranges:
+        for i in range(start, end):
+            keep[i] = False
+
+    return "\n".join(l for l, k in zip(lines, keep) if k)
+
+
 def load_orientation_command(service: str) -> str:
     path = COMMON_ORIENTATION if COMMON_ORIENTATION.exists() else _ROOT_COMMON_ORIENTATION
     if not path.exists():
         raise FileNotFoundError(f"Λείπει η κοινή εντολή προσανατολισμού: {COMMON_ORIENTATION.name}")
-    return docx_text(path)
+    full_text = docx_text(path)
+    return _filter_orientation_sections(full_text, service)
 
 
 def load_short_adult_example() -> str:
