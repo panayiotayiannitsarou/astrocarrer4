@@ -1,7 +1,7 @@
 import streamlit as st
 from core.reference_loader import (
-    docx_text, load_orientation_command, load_short_adult_example,
-    load_short_teen_example, simple_docx_format_issues,
+    docx_text, load_orientation_command, load_unified_short_example,
+    simple_docx_format_issues,
 )
 from core.prompts import (
     CAREER_CONSISTENCY_RULE_EL, CAREER_CONSISTENCY_RULE_EN,
@@ -14,7 +14,7 @@ from core.case_state import reset_case_state, handle_pdf_upload
 
 # ---------------------------------------------------------------------------
 # UI text in both languages. Internal identifiers used by core/validator.py
-# and core/prompts.py (service, presentation, "Ναι"/"Όχι", the "Όνομα" key)
+# and core/prompts.py (presentation, "Ναι"/"Όχι", the "Όνομα" key)
 # stay as the original Greek literals no matter which UI language is shown —
 # only what the person reads/labels-for changes. This mirrors the idea from
 # the reviewed prototype (site-wide EL/EN toggle) without touching the
@@ -35,20 +35,11 @@ TR = {
         "pdf_error": "Η ανάγνωση σταμάτησε με ασφάλεια — το PDF μπορεί να μην είναι το σωστό Astrodienst Data Sheet, ή η μορφή του διαφέρει.",
         "technical_detail": "Τεχνική λεπτομέρεια",
         "chart_loaded": "✓ Ελεγμένος χάρτης στη συνεδρία: **{name}**. Ανέβασε νέο PDF μόνο αν θέλεις να τον αντικαταστήσεις, ή πάτα «🔄 Νέα ανάλυση» στο πλάι.",
-        "step2_title": "Βήμα 2 · Επιλογή υπηρεσίας",
+        "step2_title": "Βήμα 2 · Όνομα",
         "name_label": "Όνομα για το τελικό έγγραφο",
-        "service_label": "Επιλεγμένη υπηρεσία",
-        "service_child": "Παιδί/έφηβος",
-        "service_adult": "Ενήλικας σε αλλαγή επαγγελματικής πορείας",
         "presentation_simple": "Απλή και πρακτική",
-        "success_adult_simple": "Θα ζητηθεί σύντομο κείμενο 2–3 σελίδων, με καθημερινή γλώσσα, 4–6 ταλέντα, 4–5 επαγγελματικούς τομείς και σύντομη τελική σύνθεση.",
-        "success_child_simple": "Θα ζητηθεί σύντομο, φιλικό κείμενο 2–3 σελίδων για έφηβο, με απλή γλώσσα και χωρίς τις εκτενείς ενότητες της αναλυτικής έκδοσης.",
+        "success_simple": "Θα ζητηθεί κείμενο 4–5 σελίδων, με καθημερινή γλώσσα, 4–6 ταλέντα, 4–5 επαγγελματικούς τομείς και σύντομη τελική σύνθεση.",
         "no_extra_data": "Δεν ζητούνται πρόσθετα προσωπικά, ψυχολογικά, σχολικά ή οικονομικά δεδομένα. Η υπηρεσία παρουσιάζει μόνο συμβολικές πιθανότητες προς διερεύνηση από τον ελεγμένο χάρτη.",
-        "cyprus_question": "Φοιτά στο κυπριακό εκπαιδευτικό σύστημα;",
-        "yes": "Ναι",
-        "no": "Όχι",
-        "cyprus_help": "Η απάντηση είναι υποχρεωτική. Με «Ναι» ενεργοποιείται ξεχωριστή ενότητα για τις ΟΜΠ και τις εκπαιδευτικές διαδρομές της Κύπρου.",
-        "cyprus_need_answer": "Επίλεξε «Ναι» ή «Όχι» για να δημιουργηθεί σωστά η εντολή του παιδιού/εφήβου.",
         "step3_title": "Βήμα 3 · Λήψη εντολής για ChatGPT/Claude",
         "download_command": "⬇️ Λήψη εντολής προσανατολισμού για ChatGPT/Claude",
         "upload_hint_simple": "Ανέβασε το Word στο ChatGPT ή στο Claude. Ζήτησε δύο αρχεία: το καθαρό Word του πελάτη και το εσωτερικό τεχνικό δελτίο ελέγχου.",
@@ -71,9 +62,7 @@ TR = {
         "download_checked": "⬇️ Λήψη ελεγμένου επαγγελματικού προσανατολισμού",
         "details_expander": "Λεπτομέρειες",
         "ctx_name": "Όνομα",
-        "ctx_service": "Τύπος υπηρεσίας",
         "ctx_presentation": "Τρόπος παρουσίασης",
-        "ctx_cyprus": "Φοίτηση στο κυπριακό εκπαιδευτικό σύστημα",
     },
     "en": {
         "hero_title": "AstroCheck Career",
@@ -89,20 +78,11 @@ TR = {
         "pdf_error": "Reading stopped safely — the PDF might not be the correct Astrodienst Data Sheet, or its layout differs.",
         "technical_detail": "Technical detail",
         "chart_loaded": "✓ Chart already checked in this session: **{name}**. Upload a new PDF only to replace it, or press “🔄 Start over” in the sidebar.",
-        "step2_title": "Step 2 · Choose the service",
+        "step2_title": "Step 2 · Name",
         "name_label": "Name for the final document",
-        "service_label": "Selected service",
-        "service_child": "Child / teen",
-        "service_adult": "Adult career change",
         "presentation_simple": "Simple & practical",
-        "success_adult_simple": "A short 2–3 page text will be requested, in everyday language, with 4–6 talents, 4–5 career fields, and a brief final synthesis.",
-        "success_child_simple": "A short, friendly 2–3 page text for a teen will be requested, in simple language, without the more extensive sections of the detailed version.",
+        "success_simple": "A 4–5 page text will be requested, in everyday language, with 4–6 talents, 4–5 career fields, and a brief final synthesis.",
         "no_extra_data": "No additional personal, psychological, school, or financial data is requested. This service only presents symbolic possibilities to explore, drawn from the checked chart.",
-        "cyprus_question": "Is the child/teen enrolled in the Cyprus education system?",
-        "yes": "Yes",
-        "no": "No",
-        "cyprus_help": "An answer is required. “Yes” activates a separate section for Cyprus school-leaving exam groups (ΟΜΠ) and education pathways.",
-        "cyprus_need_answer": "Choose “Yes” or “No” so the child/teen command is generated correctly.",
         "step3_title": "Step 3 · Download the command for ChatGPT/Claude",
         "download_command": "⬇️ Download the orientation command for ChatGPT/Claude",
         "upload_hint_simple": "Upload the Word file to ChatGPT or Claude. Ask for two files: the clean client document and the internal technical audit sheet.",
@@ -125,9 +105,7 @@ TR = {
         "download_checked": "⬇️ Download the checked career orientation result",
         "details_expander": "Details",
         "ctx_name": "Name",
-        "ctx_service": "Service type",
         "ctx_presentation": "Presentation mode",
-        "ctx_cyprus": "Enrolled in Cyprus education system",
     },
 }
 
@@ -175,61 +153,30 @@ st.success(t["chart_loaded"].format(name=chart.name))
 st.subheader(t["step2_title"])
 name_override = st.text_input(t["name_label"], value=chart.name, key='name_override')
 
-SERVICE_DISPLAY = {t["service_child"]: "Παιδί/έφηβος", t["service_adult"]: "Ενήλικας σε αλλαγή επαγγελματικής πορείας"}
-YESNO_DISPLAY = {t["yes"]: "Ναι", t["no"]: "Όχι"}
-
-service_label = st.selectbox(t["service_label"], list(SERVICE_DISPLAY.keys()), key='orientation_service')
-service = SERVICE_DISPLAY[service_label]
+SERVICE_TITLE = "Ανάδειξη Ταλέντων και Διερεύνηση Επαγγελματικών Επιλογών"
+OUTPUT_NAME = "AstroCheck_Anadeixi_Talenton.docx"
 # Η "Αναλυτική με αστρολογική τεκμηρίωση" παρουσίαση αφαιρέθηκε -- στην πράξη
-# χρησιμοποιείται πάντα η "Απλή και πρακτική", οπότε κλειδώνεται σταθερά εδώ
-# αντί να εμφανίζεται ως επιλογή που μπερδεύει χωρίς λόγο.
+# χρησιμοποιείται πάντα η "Απλή και πρακτική", οπότε κλειδώνεται σταθερά εδώ.
 presentation_label = t["presentation_simple"]
 presentation = "Απλή και πρακτική"
 
-if service == "Ενήλικας σε αλλαγή επαγγελματικής πορείας":
-    st.success(t["success_adult_simple"])
-elif service == "Παιδί/έφηβος":
-    st.success(t["success_child_simple"])
+st.success(t["success_simple"])
 st.caption(t["no_extra_data"])
-
-cyprus_school = None
-cyprus_school_label = None
-if service == "Παιδί/έφηβος":
-    cyprus_school_label = st.radio(
-        t["cyprus_question"], list(YESNO_DISPLAY.keys()), index=None,
-        key="orientation_cyprus_school", horizontal=True, help=t["cyprus_help"],
-    )
-    if cyprus_school_label is None:
-        st.info(t["cyprus_need_answer"])
-        st.stop()
-    cyprus_school = YESNO_DISPLAY[cyprus_school_label]
-    service_title = "Ανάδειξη Ταλέντων και Επαγγελματικός Προσανατολισμός Παιδιού/Εφήβου"
-    output_name = "AstroCheck_Prosanatolismos_Paidiou_Efivou.docx"
-else:
-    service_title = "Ανάδειξη Ταλέντων και Επαγγελματικός Αναπροσανατολισμός Ενήλικα"
-    output_name = "AstroCheck_Anaprosanatolismos_Enilikou.docx"
 
 st.subheader(t["step3_title"])
 context = {
     t["ctx_name"]: name_override or chart.name,
-    t["ctx_service"]: service_label,
     t["ctx_presentation"]: presentation_label,
 }
-if service == "Παιδί/έφηβος":
-    context[t["ctx_cyprus"]] = cyprus_school_label
 
-command_text = load_orientation_command(service)
+command_text = load_orientation_command()
 orientation_source = build_orientation_source(chart)
-style_example_text = ""
-if service == "Ενήλικας σε αλλαγή επαγγελματικής πορείας":
-    style_example_text = load_short_adult_example()
-elif service == "Παιδί/έφηβος":
-    style_example_text = load_short_teen_example()
+style_example_text = load_unified_short_example()
 orientation_doc = build_orientation_docx(
-    name_override or chart.name, service_title, context, command_text,
+    name_override or chart.name, SERVICE_TITLE, context, command_text,
     orientation_source, style_example_text=style_example_text,
 )
-st.download_button(t["download_command"], orientation_doc, file_name=output_name, type="primary", use_container_width=True)
+st.download_button(t["download_command"], orientation_doc, file_name=OUTPUT_NAME, type="primary", use_container_width=True)
 
 # The single top language toggle now decides the deliverable's language too
 # (instead of asking again in a separate control) — this was the strongest
@@ -248,7 +195,7 @@ if lang == "el":
 1. Το καθαρό παραδοτέο του πελάτη, χωρίς πλανήτες, Οίκους, όψεις, orb ή κατηγορίες βαρύτητας.
 2. Το εσωτερικό τεχνικό δελτίο ελέγχου, με την πλήρη τεκμηρίωση που απαιτεί η δεσμευτική εντολή. Το δεύτερο αρχείο δεν παραδίδεται στον πελάτη.
 
-Αν η υπηρεσία αφορά ενήλικα, εφάρμοσε υποχρεωτικά τον ειδικό Κανόνα 0Γ: το καθαρό παραδοτέο να είναι σύντομο, σε καθημερινή γλώσσα και χωρίς τους αναλυτικούς πίνακες, το εργασιακό περιβάλλον, τα επόμενα βήματα, το σχέδιο 8–12 εβδομάδων ή τις επαναλαμβανόμενες ενότητες της πλήρους έκδοσης. Το εσωτερικό τεχνικό δελτίο παραμένει αναλυτικό.
+Εφάρμοσε υποχρεωτικά τον Κανόνα 0Γ («Ενοποιημένος κανόνας σύντομης και απλής έκδοσης»): το καθαρό παραδοτέο να είναι 4–5 σελίδες, σε καθημερινή γλώσσα, και χωρίς τους αναλυτικούς πίνακες, το εργασιακό περιβάλλον, τα επόμενα βήματα, το σχέδιο 8–12 εβδομάδων ή τις επαναλαμβανόμενες ενότητες της πλήρους έκδοσης. Το εσωτερικό τεχνικό δελτίο παραμένει αναλυτικό.
 
 Το ανώνυμο πρότυπο σύντομης έκδοσης περιλαμβάνεται ήδη μέσα στο έγγραφο. Χρησιμοποίησέ το αποκλειστικά για τη δομή, το μήκος και την απλή γλώσσα· μην αντιγράψεις από αυτό περιεχόμενο ή συμπεράσματα.
 
@@ -264,7 +211,7 @@ The chosen presentation is "Simple & practical". Deliver two separate, complete 
 1. The clean client deliverable, without planets, Houses, aspects, orb, or weight categories.
 2. The internal technical audit sheet, with the full documentation the binding command requires. This second file is not delivered to the client.
 
-If the service is for an adult, you must apply the special Rule 0C: the clean deliverable must be short, in everyday language, and must NOT include the detailed tables, work environment, next steps, the 8–12 week plan, or the repeated sections of the full version. The internal technical sheet stays detailed.
+Apply Rule 0Γ ("Unified simple-version rule") mandatorily: the clean deliverable must be 4–5 pages, in everyday language, and must NOT include the detailed tables, work environment, next steps, the 8–12 week plan, or the repeated sections of the full version. The internal technical sheet stays detailed.
 
 The short-version anonymous template is already included inside the document. Use it only for structure, length, and plain language — do not copy content or conclusions from it.
 
@@ -274,39 +221,17 @@ The clean Word file must have a white background and black text, like the templa
 
 Do a careful self-check before delivering. The real validator will run afterwards inside AstroCheck Career."""
 
-# Ενισχυτικές οδηγίες (ισχύουν πάντα, ανεξάρτητα από παιδί/έφηβο ή ενήλικα) --
-# προστέθηκαν μετά από πραγματικά περιστατικά όπου το μοντέλο έγραφε το όνομα
-# με λατινικούς χαρακτήρες ή τον τίτλο ολόκληρο σε κεφαλαία. Χτίζονται σε ΞΕΧΩΡΙΣΤΗ
-# μεταβλητή (όχι απευθείας μέσα στο paste_message) ώστε να περνούν ΚΑΙ στο κουμπί
-# αυτόματης δημιουργίας (μέσω build_orientation_prompt), όχι μόνο στο κείμενο
-# αντιγραφής για ChatGPT/Claude -- αλλιώς τα δύο μονοπάτια θα έδιναν διαφορετικό
-# αποτέλεσμα για την ίδια επιλογή.
+# Ενισχυτικές οδηγίες (ισχύουν πάντα) -- προστέθηκαν μετά από πραγματικά
+# περιστατικά όπου το μοντέλο έγραφε το όνομα με λατινικούς χαρακτήρες ή τον
+# τίτλο ολόκληρο σε κεφαλαία. Χτίζονται σε ΞΕΧΩΡΙΣΤΗ μεταβλητή (όχι απευθείας
+# μέσα στο paste_message) ώστε να περνούν ΚΑΙ στο κουμπί αυτόματης δημιουργίας
+# (μέσω build_orientation_prompt), όχι μόνο στο κείμενο αντιγραφής για
+# ChatGPT/Claude -- αλλιώς τα δύο μονοπάτια θα έδιναν διαφορετικό αποτέλεσμα.
 reinforcement_instructions = (
-    f"""Γράψε το όνομα «{name_override or chart.name}» ακριβώς όπως δόθηκε, με ελληνικούς χαρακτήρες -- μην το μεταγράψεις σε λατινικό αλφάβητο (π.χ. όχι "GAVRIELA"). Ο κύριος τίτλος του εγγράφου να είναι σε κανονική μορφή πεζών/κεφαλαίων (π.χ. «Ανάδειξη Ταλέντων και Επαγγελματικός Προσανατολισμός»), όχι ολόκληρος σε κεφαλαία."""
+    f"""Γράψε το όνομα «{name_override or chart.name}» ακριβώς όπως δόθηκε, με ελληνικούς χαρακτήρες -- μην το μεταγράψεις σε λατινικό αλφάβητο (π.χ. όχι "GAVRIELA"). Ο κύριος τίτλος του εγγράφου να είναι σε κανονική μορφή πεζών/κεφαλαίων (π.χ. «Ανάδειξη Ταλέντων και Διερεύνηση Επαγγελματικών Επιλογών»), όχι ολόκληρος σε κεφαλαία."""
     if lang == "el" else
     f"""Write the name "{name_override or chart.name}" exactly as given, in Greek characters -- do not transliterate it into the Latin alphabet (e.g. not "GAVRIELA"). The document's main title should use normal sentence/title case, not ALL CAPS."""
 )
-
-if service == "Παιδί/έφηβος" and cyprus_school == "Ναι":
-    reinforcement_instructions += (
-        """
-
-Το παιδί/ο έφηβος φοιτά στο κυπριακό εκπαιδευτικό σύστημα. Πρόσθεσε σύντομη ενότητα «Πλαίσιο Εκπαιδευτικού Συστήματος (Κύπρος)» με ΑΚΡΙΒΩΣ τις δύο υποενότητες, με αυτούς τους ίδιους τίτλους λέξη προς λέξη: «Οι τέσσερις επιλογές στην Α΄ Λυκείου» (παρουσίασε εκεί κάθε μία από τις 4 ΟΜΠ σε μία απλή γραμμή) και «Ποιες επιλογές αξίζει να εξετάσεις» (σύνδεσε εκεί προσεκτικά τις σχετικές ΟΜΠ με τα ταλέντα, ονομάζοντας ρητά ποιο ταλέντο στηρίζει κάθε σύνδεση, χωρίς κατάταξη ή αποκλεισμό, και κλείσε λέγοντας ΑΠΕΥΘΕΙΑΣ στον μαθητή σε 2ο πρόσωπο -- «τα μαθήματα που ΣΟΥ αρέσουν, την επίδοσή ΣΟΥ και τα επαγγέλματα που θέλεις να γνωρίσεις καλύτερα», όχι σε 3ο πρόσωπο «στον μαθητή/του»). Μην προσθέσεις ξεχωριστή υποενότητα «Τι χρειάζεται να θυμάσαι» — επαναλαμβάνει το ίδιο κλείσιμο. Μην χρησιμοποιήσεις άλλους τίτλους για αυτές τις δύο υποενότητες. Μην προσθέσεις χωριστές πανεπιστημιακές σπουδές/Τμήματα σε κάθε επαγγελματικό τομέα, ερωτήσεις συζήτησης, οδηγίες προς γονείς/εκπαιδευτικούς ή σχέδιο 8–12 εβδομάδων. Χρησιμοποίησε μόνο πρόσφατα επαληθευμένες επίσημες πληροφορίες για το εκπαιδευτικό σύστημα και μην κατατάξεις ή αποκλείσεις ΟΜΠ."""
-        if lang == "el" else
-        """
-
-The child/teen is enrolled in the Cyprus education system. Add a brief "Cyprus Education System Context" section with EXACTLY these three sub-sections, using these EXACT Greek titles word-for-word (the validator checks for them verbatim): «Οι τέσσερις επιλογές στην Α΄ Λυκείου» (present each of the 4 ΟΜΠ groups there in one simple line, and add that the choice later connects to the Tracks of the 2nd and 3rd Lyceum years, and that the exact rules may change, so the official Ministry of Education guide should be checked when the real choice is made), «Ποιες επιλογές αξίζει να εξετάσεις» (carefully connect the relevant ΟΜΠ groups with the talents there, without ranking or exclusion), and «Τι χρειάζεται να θυμάσαι» (address the student DIRECTLY in the 2nd person -- "the courses YOU like, YOUR performance, and the professions you want to get to know better" -- not in the 3rd person). Do not use any other titles for these three sub-sections. Do not add separate university studies/departments for each career field, discussion questions, guidance for parents/teachers, or the 8–12 week plan. Use only recently verified official information about the education system, and do not rank or exclude any ΟΜΠ (exam subject group)."""
-    )
-elif service == "Παιδί/έφηβος":
-    reinforcement_instructions += (
-        """
-
-Το παιδί/ο έφηβος δεν φοιτά στο κυπριακό εκπαιδευτικό σύστημα. Παράλειψε την ενότητα για τις ΟΜΠ και τις εκπαιδευτικές διαδρομές της Κύπρου και μην υποθέσεις άλλο εκπαιδευτικό σύστημα."""
-        if lang == "el" else
-        """
-
-The child/teen is NOT enrolled in the Cyprus education system. Omit the section on ΟΜΠ groups and Cyprus education pathways, and do not assume any other education system."""
-    )
 
 paste_message += "\n\n" + reinforcement_instructions
 paste_message += "\n\n" + (CAREER_CONSISTENCY_RULE_EL if lang == "el" else CAREER_CONSISTENCY_RULE_EN)
@@ -344,9 +269,9 @@ with st.container(border=True):
                     client_text, audit_text = split_orientation_response(raw)
                     orientation_personal = {"Όνομα": name_override or chart.name}
                     check = validate_orientation(
-                        chart, client_text, orientation_personal, service,
+                        chart, client_text, orientation_personal,
                         presentation_mode=presentation, audit_text=audit_text,
-                        cyprus_education=(cyprus_school == "Ναι"), format_issues=[],
+                        format_issues=[],
                     )
                     if check.ok or attempt == MAX_AUTO_ATTEMPTS:
                         break
@@ -371,8 +296,8 @@ with st.container(border=True):
                     current_prompt = auto_prompt + correction_note
 
                 st.session_state.orientation_validation = check
-                st.session_state.orientation_docx_bytes = build_orientation_client_docx(service_title, name_override or chart.name, client_text)
-                st.session_state.orientation_docx_name = output_name
+                st.session_state.orientation_docx_bytes = build_orientation_client_docx(SERVICE_TITLE, name_override or chart.name, client_text)
+                st.session_state.orientation_docx_name = OUTPUT_NAME
                 st.session_state.orientation_audit_docx_bytes = audit_text.encode("utf-8") if audit_text else None
                 if check.ok:
                     if attempt == 1:
@@ -399,9 +324,8 @@ if st.button(t["check_button"], disabled=not ready_to_check, use_container_width
     audit_text = docx_text(audit_bytes) if audit_bytes else None
     orientation_personal = {"Όνομα": name_override or chart.name}
     check = validate_orientation(
-        chart, result_text, orientation_personal, service,
+        chart, result_text, orientation_personal,
         presentation_mode=presentation, audit_text=audit_text,
-        cyprus_education=(cyprus_school == "Ναι"),
         format_issues=result_format_issues,
     )
     st.session_state.orientation_validation = check
