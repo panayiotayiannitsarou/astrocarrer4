@@ -17,10 +17,10 @@ DEFAULT_INSTRUCTIONS = REFERENCE_DIR / "Odigies_v5.docx"
 DEFAULT_STYLE = REFERENCE_DIR / "Elena_style_guide_v2.docx"
 ROOT_INSTRUCTIONS = REPO_ROOT / "Odigies_v5.docx"
 ROOT_STYLE = REPO_ROOT / "Elena_style_guide_v2.docx"
-COMMON_ORIENTATION = REFERENCE_DIR / "Desmeftiki_Entoli_Epaggelmatikou_Prosanatolismou_Koini_v10.docx"
+COMMON_ORIENTATION = REFERENCE_DIR / "Desmeftiki_Entoli_Epaggelmatikou_Prosanatolismou_Koini_v11_UNIFIED.docx"
 SHORT_ADULT_EXAMPLE = REFERENCE_DIR / "Protypo_Syntomis_Ekdosis_Enilikou.docx"
 SHORT_TEEN_EXAMPLE = REFERENCE_DIR / "Protypo_Syntomis_Ekdosis_Paidiou_Efivou.docx"
-_ROOT_COMMON_ORIENTATION = REPO_ROOT / "Desmeftiki_Entoli_Epaggelmatikou_Prosanatolismou_Koini_v10.docx"
+_ROOT_COMMON_ORIENTATION = REPO_ROOT / "Desmeftiki_Entoli_Epaggelmatikou_Prosanatolismou_Koini_v11_UNIFIED.docx"
 _ROOT_SHORT_ADULT = REPO_ROOT / "Protypo_Syntomis_Ekdosis_Enilikou.docx"
 _ROOT_SHORT_TEEN = REPO_ROOT / "Protypo_Syntomis_Ekdosis_Paidiou_Efivou.docx"
 
@@ -103,27 +103,31 @@ def load_default_references() -> tuple[str, str]:
 # ρητά υπερισχύονται/παραλείπονται από τους Κανόνες 0Γ/0Δ -- ασφαλές να μην
 # σταλούν καθόλου, αφού δεν εφαρμόζονται ποτέ σε αυτή την εφαρμογή:
 _ANALYTICAL_ONLY_HEADINGS = (
-    "0Α.",   # πίνακες ταλέντων -- το 0Δ λέει ρητά "Μην χρησιμοποιήσεις πίνακες"
-    "10Α.",  # πλήρες Πλαίσιο Εκπαιδευτικού Συστήματος -- το 0Γ/0Δ ορίζουν τη δική τους, σύντομη εκδοχή
-    "11.",   # πλήρεις επαγγελματικές οικογένειες -- υπερισχύεται από το σύντομο σχήμα του 0Γ/0Δ
+    "0.",    # Κανόνας 0 (επιλογή "Παιδί/έφηβος" vs "Ενήλικας" λειτουργίας) -- διάβαζε ένα πεδίο
+             # «Τύπος υπηρεσίας» που το app.py δεν στέλνει πια καθόλου στο context, αφού η
+             # υπηρεσία ενοποιήθηκε σε ένα μόνο mode (Κανόνας 0Γ, ο οποίος υπερισχύει ούτως ή
+             # άλλως). Παρέμενε εδώ μόνο ως ιστορικό/νεκρό κείμενο για την "Αναλυτική" έκδοση.
+    "0Α.",   # πίνακες ταλέντων -- ο Κανόνας 0Γ λέει ρητά "Μην χρησιμοποιήσεις πίνακες"
+    "10Α.",  # πλήρες Πλαίσιο Εκπαιδευτικού Συστήματος -- καταργήθηκε εντελώς (βλ. σχετικό commit)
+    "11.",   # πλήρεις επαγγελματικές οικογένειες -- υπερισχύεται από το σύντομο σχήμα του 0Γ
     "12.",   # πλήρης ενσωμάτωση επαγγελμάτων -- ίδιος λόγος
     "13.",   # περιβάλλον εργασίας -- ρητά παραλείπεται στη σύντομη έκδοση
     "13Α.",  # δυνατά σημεία/εμπόδια -- ρητά παραλείπονται στη σύντομη έκδοση
     "14.",   # σχέδιο διερεύνησης 8-12 εβδομάδων -- ρητά παραλείπεται
     "15.",   # οδηγίες προς γονείς -- ρητά παραλείπεται
-    "16.",   # πλήρης υποχρεωτική δομή -- υπερισχύεται από τη δομή του 0Γ/0Δ
+    "16.",   # πλήρης υποχρεωτική δομή -- υπερισχύεται από τη δομή του 0Γ
     "18.",   # Συμβολική Κατεύθυνση Εξέλιξης -- ρητά παραλείπεται στη σύντομη έκδοση
 )
 
 
-def _filter_orientation_sections(text: str, service: str) -> str:
+def _filter_orientation_sections(text: str) -> str:
     lines = text.split("\n")
     heading_re = re.compile(r"^(0[Α-Ω]?\.|[0-9]{1,2}[Α-Ω]?\.)\s")
 
-    other_mode_heading = (
-        "0Γ." if service == "Παιδί/έφηβος" else "0Δ."
-    )
-    excluded_prefixes = _ANALYTICAL_ONLY_HEADINGS + (other_mode_heading,)
+    # Η υπηρεσία ενοποιήθηκε σε ένα μόνο mode (Κανόνας 0Γ, "Ενοποιημένος
+    # κανόνας σύντομης και απλής έκδοσης") -- δεν υπάρχει πια δεύτερο,
+    # εναλλακτικό mode να αποκλειστεί με βάση το service.
+    excluded_prefixes = _ANALYTICAL_ONLY_HEADINGS
 
     headings = [i for i, l in enumerate(lines) if heading_re.match(l)]
     drop_ranges = []
@@ -141,12 +145,12 @@ def _filter_orientation_sections(text: str, service: str) -> str:
     return "\n".join(l for l, k in zip(lines, keep) if k)
 
 
-def load_orientation_command(service: str) -> str:
+def load_orientation_command() -> str:
     path = COMMON_ORIENTATION if COMMON_ORIENTATION.exists() else _ROOT_COMMON_ORIENTATION
     if not path.exists():
         raise FileNotFoundError(f"Λείπει η κοινή εντολή προσανατολισμού: {COMMON_ORIENTATION.name}")
     full_text = docx_text(path)
-    return _filter_orientation_sections(full_text, service)
+    return _filter_orientation_sections(full_text)
 
 
 def load_short_adult_example() -> str:
@@ -163,3 +167,14 @@ def load_short_teen_example() -> str:
     if not path.exists():
         raise FileNotFoundError(f"Λείπει το πρότυπο παιδιού/εφήβου: {SHORT_TEEN_EXAMPLE.name}")
     return docx_text(path)
+
+
+def load_unified_short_example() -> str:
+    """Η υπηρεσία ενοποιήθηκε σε ένα μόνο mode (χωρίς διάκριση παιδί/έφηβος
+    vs ενήλικας), οπότε χρειαζόταν ΕΝΑ ανώνυμο πρότυπο μορφής, όχι δύο.
+    Επιλέχθηκε το πρότυπο Protypo_Syntomis_Ekdosis_Paidiou_Efivou.docx ως
+    βάση, στο οποίο αφαιρέθηκε η ενότητα Κύπρου/ΟΜΠ και η απαγορευμένη
+    επικεφαλίδα «Τι χρειάζεται να θυμάσαι» (η υπενθύμιση μεταφέρθηκε στο
+    κλείσιμο της Τελικής Σύνθεσης), ώστε να συμφωνεί πλήρως με τον
+    ενοποιημένο Κανόνα 0Γ."""
+    return load_short_teen_example()

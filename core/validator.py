@@ -1329,21 +1329,21 @@ def _career_consistency_errors(client_text: str, audit_text: str) -> list[str]:
 def validate_orientation(chart, text: str, personal: dict | None = None,
                          service: str = "", presentation_mode: str = "Αναλυτική με αστρολογική τεκμηρίωση",
                          audit_text: str | None = None,
-                         cyprus_education: bool = False,
+                         cyprus_education: bool = False,  # DEPRECATED: το χαρακτηριστικό Κύπρου/ΟΜΠ καταργήθηκε· η παράμετρος
+                         # μένει εδώ μόνο για να μη σπάσουν clients που ακόμα το περνούν ρητά (π.χ. το entry-point
+                         # πριν ενημερωθεί) -- δεν επηρεάζει πλέον καμία λογική ελέγχου. Αφαίρεσέ την εντελώς
+                         # μόλις κανένας caller δεν την περνάει πια.
                          format_issues: list[str] | None = None) -> OrientationValidationResult:
     # Ίδια κανονικοποίηση ' -> ′ με τα validate_analysis()/validate_rewrite()
     # -- βλ. docstring της _normalize_prime_marks.
     text = _normalize_prime_marks(text)
     if audit_text is not None:
         audit_text = _normalize_prime_marks(audit_text)
-    short_adult = (
-        service != "Παιδί/έφηβος"
-        and presentation_mode == "Απλή και πρακτική"
-    )
-    short_child = (
-        service == "Παιδί/έφηβος"
-        and presentation_mode == "Απλή και πρακτική"
-    )
+    # Η υπηρεσία ενοποιήθηκε σε ένα μόνο "απλή" mode -- δεν υπάρχει πια
+    # διάκριση short_adult/short_child (πρώην βασισμένη στο service string,
+    # που το app.py δεν στέλνει πια). short_simple = η ενοποιημένη σύντομη
+    # έκδοση, ανεξάρτητα ποιος είναι ο πελάτης.
+    short_simple = presentation_mode == "Απλή και πρακτική"
     common_topics={
         "προφίλ": r"\bπροφίλ\b",
         "ταλέντα": r"ταλέντ|ικανότητ|δυνατότητ",
@@ -1360,7 +1360,7 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
         "δυνατά σημεία που χρειάζονται καλλιέργεια": r"δυνατ(?:ά|ών)\s+σημε(?:ία|ίων)[^\r\n]{0,80}καλλιέργ",
         "πιθανά εμπόδια": r"πιθαν(?:ά|ών)\s+εμπόδι",
     }
-    if short_adult or short_child:
+    if short_simple:
         # Η σύντομη έκδοση είναι σκόπιμα λιτή. Δεν απαιτούμε τους αναλυτικούς
         # πίνακες ταλέντων ούτε πλήρες εβδομαδιαίο πλάνο, γιατί αυτά ήταν η
         # βασική αιτία που το καθαρό παραδοτέο μεγάλωνε υπερβολικά.
@@ -1373,34 +1373,25 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
         }
     elif presentation_mode == "Αναλυτική με αστρολογική τεκμηρίωση":
         common_topics["Παράρτημα τεκμηρίωσης"] = r"Παράρτημα[^\r\n]{0,80}(?:τεκμηρίωσ|ελέγχ)"
-    if short_child:
+    if short_simple:
         topics = dict(common_topics)
-        if cyprus_education:
-            topics["Πλαίσιο Εκπαιδευτικού Συστήματος (Κύπρος)"] = (
-                r"Πλαίσιο\s+Εκπαιδευτικ(?:ού|ο)\s+Συστήματος\s*\(Κύπρος\)"
-            )
-            topics["απλή παρουσίαση των τεσσάρων ΟΜΠ"] = r"Οι\s+τέσσερις\s+επιλογές\s+στην\s+Α[΄'’]?\s*Λυκείου"
-            topics["σύνδεση επιλογών με ταλέντα"] = r"Ποιες\s+επιλογές\s+αξίζει\s+να\s+εξετάσεις"
-            topics["υπενθύμιση πραγματικών κριτηρίων"] = r"Τι\s+χρειάζεται\s+να\s+θυμάσαι"
+        # Η υπενθύμιση πραγματικών κριτηρίων εμφανίζεται πάντα στην Τελική
+        # Σύνθεση της ενοποιημένης σύντομης έκδοσης, ανεξάρτητα από το
+        # πλέον ανύπαρκτο cyprus_education/service.
+        topics["υπενθύμιση πραγματικών κριτηρίων"] = (
+            r"Τι\s+χρειάζεται\s+να\s+θυμάσαι"
+            r"|μαθήματα[\s\S]{0,200}επίδοσ[\s\S]{0,200}(?:επιβεβαιώσ|αναθεωρήσ)"
+        )
     elif service == "Παιδί/έφηβος":
         topics = {
             **common_topics,
             "οδηγίες προς γονείς/εκπαιδευτικούς": r"γον(?:είς|έα)|εκπαιδευτικ",
             "ερωτήσεις συζήτησης": r"ερωτήσεις\s+(?:για\s+)?συζήτηση",
         }
-        if cyprus_education:
-            topics["Πλαίσιο Εκπαιδευτικού Συστήματος (Κύπρος)"] = (
-                r"Πλαίσιο\s+Εκπαιδευτικ(?:ού|ο)\s+Συστήματος\s*\(Κύπρος\)"
-            )
-            topics["διάκριση ισχύοντος συστήματος και συμβολικών ταλέντων"] = (
-                r"Τι\s+ισχύει\s+σήμερα\s+στο\s+σύστημα[\s\S]{0,5000}"
-                r"Τι\s+δείχνουν\s+συμβολικά\s+τα\s+ταλέντα"
-            )
-            topics["ενδεικτικές πανεπιστημιακές σπουδές/Τμήματα ανά επαγγελματικό τομέα"] = (
-                r"(?:Ενδεικτικές\s+πανεπιστημιακές\s+σπουδές\s*/\s*Τμήματα[\s\S]{0,1800}){4}"
-            )
-    elif short_adult:
-        topics = common_topics
+        # Το χαρακτηριστικό Κύπρου/ΟΜΠ (και το αντίστοιχο πλήρες υποσύνολο με
+        # ενδεικτικές πανεπιστημιακές σπουδές ανά τομέα) καταργήθηκε εντελώς
+        # από την υπηρεσία -- σε καμία έκδοση (σύντομη ή αναλυτική) δεν πρέπει
+        # πλέον να ζητείται ή να ελέγχεται τέτοιο περιεχόμενο.
     else:
         topics = {
             **common_topics,
@@ -1422,11 +1413,16 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
             technical.append("Η απλή παρουσίαση περιέχει τεχνικά αστρολογικά δεδομένα: " + ", ".join(exposed) + ".")
         technical.extend(_orientation_audit_errors(chart, audit_text or ""))
         technical.extend(_career_consistency_errors(text, audit_text or ""))
-        if short_adult or short_child:
+        if short_simple:
             word_count = len(re.findall(r"\b[\wΆ-ώ]+\b", text, re.UNICODE))
-            if word_count > 1000:
+            # Ενοποιημένη προδιαγραφή έκτασης (0Γ+0Δ ενοποιήθηκαν σε ένα μόνο
+            # Ενοποιημένη προδιαγραφή έκτασης (0Γ+0Δ ενοποιήθηκαν σε ένα μόνο
+            # mode): στόχος 1050-1800 λέξεις / έως ~6-7 σελίδες, ώστε να
+            # χωράει άνετα και ένας πυκνός χάρτης με έως ~8 πλήρως
+            # τεκμηριωμένα ταλέντα (επιβεβαιώθηκε εμπειρικά στο παράδειγμα).
+            if word_count > 1800:
                 technical.append(
-                    f"Η σύντομη έκδοση είναι υπερβολικά μεγάλη ({word_count} λέξεις· στόχος έως 800, ανοχή έως 1.000)."
+                    f"Η σύντομη έκδοση είναι υπερβολικά μεγάλη ({word_count} λέξεις· στόχος 1.050–1.800)."
                 )
             forbidden_sections = (
                 "Τρόπος μάθησης και δημιουργίας",
@@ -1449,11 +1445,7 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
         technical.extend(_orientation_audit_errors(chart, text))
     if re.search(r"Τι\s+χρειάζεται\s+επιβεβαίωση\s*:\s*Τι\s+χρειάζεται\s+επιβεβαίωση\s*:", text, re.IGNORECASE):
         technical.append("Η ετικέτα «Τι χρειάζεται επιβεβαίωση:» επαναλαμβάνεται δύο φορές στην ίδια πρόταση.")
-    if service == "Παιδί/έφηβος" and cyprus_education and re.search(
-        r"(?im)^\s*(?:#{1,3}\s*)?Επίσημες\s+πηγές\b", text
-    ):
-        technical.append("Οι επίσημες πηγές δεν πρέπει να εμφανίζονται ως χωριστή ενότητα στο καθαρό παραδοτέο· καταγράφονται μόνο στο εσωτερικό τεχνικό δελτίο.")
-    if short_adult or short_child:
+    if short_simple:
         talent_match = re.search(
             r"Ταλέντα\s+προς\s+διερεύνηση(?P<body>[\s\S]*?)Επαγγελματικ(?:οί|ούς)\s+Τομ(?:είς|έα)",
             text,
@@ -1464,21 +1456,15 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
             talent_match.group("body"),
             re.IGNORECASE,
         ):
-            audience = "ενηλίκου" if short_adult else "παιδιού/εφήβου"
-            technical.append(f"Στη σύντομη έκδοση {audience} τα επαγγέλματα πρέπει να εμφανίζονται μόνο στους Επαγγελματικούς Τομείς, όχι μέσα στα Ταλέντα.")
-    if short_adult and re.search(
+            technical.append("Στη σύντομη έκδοση τα επαγγέλματα πρέπει να εμφανίζονται μόνο στους Επαγγελματικούς Τομείς, όχι μέσα στα Ταλέντα.")
+    if short_simple and re.search(
         r"Πλαίσιο\s+Εκπαιδευτικ(?:ού|ο)\s+Συστήματος\s*\(Κύπρος\)|κυπριακ(?:ό|ού)\s+εκπαιδευτικ|\bΟΜΠ\b|Παγκύπρι(?:ες|ων)\s+Εξετάσεις|Επιστημονικ(?:ά|ών)\s+Πεδία|Πλαίσι(?:α|ων)\s+Πρόσβασης",
         text,
         re.IGNORECASE,
     ):
-        technical.append("Η σύντομη έκδοση ενηλίκου δεν πρέπει να περιλαμβάνει ενότητα για την Κύπρο, ΟΜΠ ή εκπαιδευτικές διαδρομές.")
-    if short_child:
-        if cyprus_education and re.search(
-            r"Παγκύπρι(?:ες|ων)\s+Εξετάσεις|Επιστημονικ(?:ά|ών)\s+Πεδία|Πλαίσι(?:α|ων)\s+Πρόσβασης",
-            text,
-            re.IGNORECASE,
-        ):
-            technical.append("Η σύντομη ενότητα της Κύπρου δεν πρέπει να αναλύει Παγκύπριες Εξετάσεις, Επιστημονικά Πεδία ή Πλαίσια Πρόσβασης.")
+        # Το χαρακτηριστικό Κύπρου/ΟΜΠ καταργήθηκε εντελώς -- καμία σύντομη
+        # έκδοση δεν πρέπει ποτέ να το περιλαμβάνει.
+        technical.append("Η σύντομη έκδοση δεν πρέπει να περιλαμβάνει ενότητα για την Κύπρο, ΟΜΠ ή εκπαιδευτικές διαδρομές -- το χαρακτηριστικό έχει καταργηθεί.")
     if service != "Παιδί/έφηβος" and re.search(r"υποθετικ(?:ό|ο)\s+σενάριο[^\r\n]{0,30}15\s+ετ", text, re.IGNORECASE):
         technical.append("Η ανάλυση ενηλίκου δεν πρέπει να παρουσιάζεται ως υποθετικό σενάριο 15 ετών.")
     name_issues = [name_issue] if name_issue else []
